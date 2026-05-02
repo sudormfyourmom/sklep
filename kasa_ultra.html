@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ultaa</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --text: #17202a;
+      --muted: #667085;
+      --line: #d8dee6;
+      --accent: #0f766e;
+      --accent-dark: #0b5f59;
+      --danger: #b42318;
+      --warn: #a15c07;
+      --shadow: 0 10px 28px rgba(16, 24, 40, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: #12202f;
+      color: #fff;
+    }
+    header h1 { margin: 0; font-size: 20px; letter-spacing: 0; }
+    header .status { color: #c8d3df; font-size: 13px; }
+    main {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      min-height: calc(100vh - 62px);
+    }
+    nav {
+      background: #182536;
+      padding: 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    nav button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: #d7dee8;
+      text-align: left;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    nav button:hover, nav button.active { background: #24354b; color: #fff; }
+    .page { display: none; padding: 16px; }
+    .page.active { display: block; }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(420px, 1fr);
+      gap: 16px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    input, select {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      font: inherit;
+      background: #fff;
+      min-width: 0;
+    }
+    input:focus, select:focus { outline: 2px solid rgba(15,118,110,.18); border-color: var(--accent); }
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 9px 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.primary:hover { background: var(--accent-dark); }
+    button.danger { color: #fff; background: var(--danger); border-color: var(--danger); }
+    button.warn { color: #fff; background: var(--warn); border-color: var(--warn); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 9px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+    th { color: var(--muted); font-weight: 600; background: #f8fafc; }
+    tr:hover td { background: #f9fbfc; }
+    .right { text-align: right; }
+    .muted { color: var(--muted); }
+    .totals {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfd;
+    }
+    .metric span { display: block; color: var(--muted); font-size: 12px; }
+    .metric strong { display: block; margin-top: 4px; font-size: 18px; }
+    .paybox {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      align-items: end;
+      margin-top: 14px;
+    }
+    label { display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
+    .receipt {
+      white-space: pre-wrap;
+      font-family: Consolas, monospace;
+      background: #101828;
+      color: #e8eef7;
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 240px;
+      overflow: auto;
+    }
+    .full { grid-column: 1 / -1; }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      background: #eef4ff;
+      color: #1849a9;
+    }
+    .low { color: var(--danger); font-weight: 700; }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      nav { display: flex; overflow-x: auto; }
+      nav button { width: auto; white-space: nowrap; }
+      .grid, .paybox, .totals { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="appTitle">ultaa</h1>
+    <div class="status" id="status">Gotowe</div>
+  </header>
+  <main>
+    <nav>
+      <button class="active" data-page="sale">Sprzedaz</button>
+      <button data-page="history">Historia</button>
+      <button data-page="stock">Magazyn</button>
+      <button data-page="settings">Ustawienia</button>
+    </nav>
+
+    <section id="sale" class="page active">
+      <div class="grid">
+        <div class="panel">
+          <h2>Produkty</h2>
+          <div class="toolbar">
+            <input id="productSearch" placeholder="Szukaj nazwy albo kodu">
+            <label>Ilość <input id="qtyInput" value="1" inputmode="decimal"></label>
+          </div>
+          <table>
+            <thead><tr><th>Kod</th><th>Nazwa</th><th class="right">Cena</th><th class="right">Stan</th><th></th></tr></thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h2>Koszyk</h2>
+          <table>
+            <thead><tr><th>Pozycja</th><th class="right">Ilość</th><th class="right">Cena</th><th class="right">Razem</th><th></th></tr></thead>
+            <tbody id="cartBody"></tbody>
+          </table>
+          <div class="totals">
+            <div class="metric"><span>Brutto</span><strong id="grossTotal">0,00 zł</strong></div>
+            <div class="metric"><span>Rabat</span><strong id="discountAmount">0,00 zł</strong></div>
+            <div class="metric"><span>Netto</span><strong id="netTotal">0,00 zł</strong></div>
+            <div class="metric"><span>Do zapłaty</span><strong id="payTotal">0,00 zł</strong></div>
+          </div>
+          <div class="paybox">
+            <label>Rabat % <input id="discountInput" value="0" inputmode="decimal"></label>
+            <label>Metoda
+              <select id="paymentMethod">
+                <option>Karta</option>
+                <option>Gotówka</option>
+                <option>BLIK</option>
+              </select>
+            </label>
+            <label>Otrzymano <input id="paidInput" inputmode="decimal" placeholder="dla gotówki"></label>
+            <div class="metric"><span>Reszta / brak</span><strong id="changeInfo">0,00 zł</strong></div>
+            <button class="primary" id="finishBtn">Finalizuj</button>
+          </div>
+        </div>
+        <div class="panel full">
+          <h2>Ostatni paragon</h2>
+          <div class="receipt" id="receiptPreview">Brak paragonu.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="history" class="page">
+      <div class="panel">
+        <h2>Historia</h2>
+        <div class="toolbar">
+          <input id="historySearch" placeholder="Szukaj ID, daty, metody">
+          <button id="exportBtn">Eksport JSON</button>
+          <button class="warn" id="returnBtn">Zwrot zaznaczonej</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Czas</th><th>Typ</th><th>Metoda</th><th class="right">Kwota</th><th></th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="stock" class="page">
+      <div class="panel">
+        <h2>Magazyn</h2>
+        <div class="toolbar">
+          <input id="codeInput" placeholder="Kod">
+          <input id="nameInput" placeholder="Nazwa">
+          <input id="priceInput" placeholder="Cena">
+          <input id="vatInput" placeholder="VAT %" value="23">
+          <input id="stockInput" placeholder="Stan">
+          <button class="primary" id="saveProductBtn">Zapisz produkt</button>
+        </div>
+        <table>
+          <thead><tr><th>Kod</th><th>Nazwa</th><th class="right">Cena</th><th class="right">VAT</th><th class="right">Stan</th><th></th></tr></thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="settings" class="page">
+      <div class="panel">
+        <h2>Ustawienia</h2>
+        <div class="toolbar">
+          <label>Nazwa aplikacji <input id="shopNameInput"></label>
+          <label>Stopka paragonu <input id="footerInput"></label>
+          <label>Próg niskiego stanu <input id="lowStockInput" inputmode="decimal"></label>
+          <button class="primary" id="saveSettingsBtn">Zapisz</button>
+          <button class="danger" id="resetBtn">Reset danych</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "ultaa_cash_register_v1";
+    const money = value => Number(value || 0).toLocaleString("pl-PL", { style: "currency", currency: "PLN" });
+    const number = value => Number(String(value ?? "0").replace(",", ".")) || 0;
+    const now = () => new Date().toISOString().slice(0, 19).replace("T", " ");
+    const auth = prefix => `${prefix}-${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const defaults = {
+      settings: { shopName: "ultaa", footer: "Dziękujemy.", lowStock: 5 },
+      products: [
+        { code: "1001", name: "Chleb", price: 4.50, vat: 5, stock: 40, active: true },
+        { code: "1002", name: "Mleko", price: 3.80, vat: 5, stock: 60, active: true },
+        { code: "1003", name: "Masło", price: 7.99, vat: 5, stock: 25, active: true },
+        { code: "1004", name: "Ser", price: 9.50, vat: 5, stock: 18, active: true },
+        { code: "1005", name: "Woda", price: 2.20, vat: 23, stock: 120, active: true },
+        { code: "1006", name: "Kawa", price: 18.99, vat: 23, stock: 15, active: true }
+      ],
+      history: []
+    };
+
+    let data = load();
+    let cart = [];
+    let selectedHistoryId = null;
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(defaults);
+      } catch {
+        return structuredClone(defaults);
+      }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      render();
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    function cartSummary() {
+      const gross = cart.reduce((sum, item) => sum + item.gross, 0);
+      const discountPercent = Math.min(90, Math.max(0, number(document.getElementById("discountInput").value)));
+      const discount = +(gross * discountPercent / 100).toFixed(2);
+      const total = +(gross - discount).toFixed(2);
+      const factor = gross ? total / gross : 1;
+      const net = +cart.reduce((sum, item) => sum + item.net * factor, 0).toFixed(2);
+      const vat = +(total - net).toFixed(2);
+      return { gross, discountPercent, discount, total, net, vat };
+    }
+
+    function makeItem(product, qty) {
+      const gross = +(product.price * qty).toFixed(2);
+      const net = +(gross / (1 + product.vat / 100)).toFixed(2);
+      return { code: product.code, name: product.name, price: product.price, vat: product.vat, qty, gross, net, vatAmount: +(gross - net).toFixed(2) };
+    }
+
+    function addToCart(code) {
+      const product = data.products.find(p => p.code === code && p.active);
+      const amount = number(document.getElementById("qtyInput").value) || 1;
+      if (!product || amount <= 0) return;
+      const already = cart.filter(i => i.code === code).reduce((sum, i) => sum + i.qty, 0);
+      if (already + amount > product.stock) {
+        alert(`Za mało na stanie. Dostępne: ${product.stock}`);
+        return;
+      }
+      const item = cart.find(i => i.code === code);
+      if (item) {
+        item.qty += amount;
+        Object.assign(item, makeItem(product, item.qty));
+      } else {
+        cart.push(makeItem(product, amount));
+      }
+      renderCart();
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      renderCart();
+    }
+
+    function finishSale() {
+      if (!cart.length) return alert("Koszyk jest pusty.");
+      const summary = cartSummary();
+      const method = document.getElementById("paymentMethod").value;
+      let details = "";
+      if (method === "Gotówka") {
+        const paid = number(document.getElementById("paidInput").value);
+        if (paid < summary.total) return alert(`Brakuje ${money(summary.total - paid)}`);
+        details = `Status: OPŁACONO | Kwota: ${money(summary.total)} | Nr autoryzacji: ${auth("CASH")} | Otrzymano: ${money(paid)} | Reszta: ${money(paid - summary.total)}`;
+      } else if (method === "BLIK") {
+        const code = prompt("Podaj 6-cyfrowy kod BLIK:");
+        if (!/^\d{6}$/.test(code || "")) return alert("Kod BLIK musi mieć 6 cyfr.");
+        if (!confirm("Czy klient potwierdził płatność w aplikacji?")) return;
+        details = `Status: ZAAKCEPTOWANO | Kwota: ${money(summary.total)} | Nr autoryzacji: ${auth("BLIK")} | Kod zweryfikowany`;
+      } else {
+        if (!confirm(`Potwierdzić płatność kartą na ${money(summary.total)}?`)) return;
+        details = `Status: ZAAKCEPTOWANO | Kwota: ${money(summary.total)} | Nr autoryzacji: ${auth("CARD")} | Terminal: zaakceptowano`;
+      }
+      const id = nextId("S");
+      const tx = { id, time: now(), type: "SALE", method, details, items: structuredClone(cart), ...summary };
+      data.history.push(tx);
+      for (const item of cart) {
+        const product = data.products.find(p => p.code === item.code);
+        if (product) product.stock = +(product.stock - item.qty).toFixed(3);
+      }
+      cart = [];
+      save();
+      showReceipt(tx);
+      setStatus(`Sprzedaż ${id} zapisana`);
+    }
+
+    function nextId(prefix) {
+      const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+      const count = data.history.filter(t => t.id.startsWith(`${day}-${prefix}`)).length + 1;
+      return `${day}-${prefix}${String(count).padStart(4, "0")}`;
+    }
+
+    function receiptText(tx) {
+      const title = tx.type === "RETURN" ? "ZWROT" : "PARAGON NIEFISKALNY";
+      const lines = [data.settings.shopName, title, `Nr: ${tx.id}`, `Data: ${tx.time}`, "=".repeat(44)];
+      for (const item of tx.items) lines.push(`${item.code} ${item.name}`, `  ${item.qty} x ${money(item.price)} VAT ${item.vat}% = ${money(item.gross)}`);
+      lines.push("=".repeat(44), `Brutto: ${money(tx.gross)}`, `Rabat: ${money(tx.discount)}`, `SUMA: ${money(tx.total)}`, `Netto: ${money(tx.net)}`, `VAT: ${money(tx.vat)}`, `Metoda: ${tx.method}`, tx.details, data.settings.footer);
+      return lines.join("\n");
+    }
+
+    function showReceipt(tx) {
+      document.getElementById("receiptPreview").textContent = receiptText(tx);
+    }
+
+    function returnSale(id) {
+      const tx = data.history.find(t => t.id === id);
+      if (!tx || tx.type === "RETURN") return alert("Wybierz sprzedaż.");
+      if (data.history.some(t => t.returnedFrom === id)) return alert("Ta sprzedaż ma już zwrot.");
+      if (!confirm(`Zwrocić ${money(tx.total)}?`)) return;
+      const ret = { ...structuredClone(tx), id: nextId("R"), time: now(), type: "RETURN", method: "Zwrot", returnedFrom: id, details: `Zwrot do ${id}` };
+      data.history.push(ret);
+      for (const item of ret.items) {
+        const product = data.products.find(p => p.code === item.code);
+        if (product) product.stock = +(product.stock + item.qty).toFixed(3);
+      }
+      save();
+      showReceipt(ret);
+    }
+
+    function saveProduct() {
+      const product = {
+        code: document.getElementById("codeInput").value.trim(),
+        name: document.getElementById("nameInput").value.trim(),
+        price: number(document.getElementById("priceInput").value),
+        vat: number(document.getElementById("vatInput").value),
+        stock: number(document.getElementById("stockInput").value),
+        active: true
+      };
+      if (!product.code || !product.name || product.price <= 0) return alert("Podaj kod, nazwę i cenę.");
+      const old = data.products.find(p => p.code === product.code);
+      if (old) Object.assign(old, product);
+      else data.products.push(product);
+      save();
+      ["codeInput", "nameInput", "priceInput", "stockInput"].forEach(id => document.getElementById(id).value = "");
+    }
+
+    function toggleProduct(code) {
+      const product = data.products.find(p => p.code === code);
+      if (product) {
+        product.active = !product.active;
+        save();
+      }
+    }
+
+    function renderProducts() {
+      const body = document.getElementById("productsBody");
+      const q = document.getElementById("productSearch").value.toLowerCase();
+      body.innerHTML = "";
+      data.products.filter(p => p.active && (!q || p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))).forEach(p => {
+        const low = p.stock <= number(data.settings.lowStock);
+        body.insertAdjacentHTML("beforeend", `<tr><td>${p.code}</td><td>${p.name}</td><td class="right">${money(p.price)}</td><td class="right ${low ? "low" : ""}">${p.stock}</td><td class="right"><button onclick="addToCart('${p.code}')">Dodaj</button></td></tr>`);
+      });
+    }
+
+    function renderCart() {
+      const body = document.getElementById("cartBody");
+      body.innerHTML = "";
+      cart.forEach((item, i) => {
+        body.insertAdjacentHTML("beforeend", `<tr><td>${item.name}</td><td class="right">${item.qty}</td><td class="right">${money(item.price)}</td><td class="right">${money(item.gross)}</td><td class="right"><button onclick="removeFromCart(${i})">Usuń</button></td></tr>`);
+      });
+      const s = cartSummary();
+      document.getElementById("grossTotal").textContent = money(s.gross);
+      document.getElementById("discountAmount").textContent = money(s.discount);
+      document.getElementById("netTotal").textContent = money(s.net);
+      document.getElementById("payTotal").textContent = money(s.total);
+      const paid = number(document.getElementById("paidInput").value);
+      document.getElementById("changeInfo").textContent = document.getElementById("paymentMethod").value === "Gotówka" ? money(paid - s.total) : "autoryzacja";
+    }
+
+    function renderHistory() {
+      const body = document.getElementById("historyBody");
+      const q = document.getElementById("historySearch").value.toLowerCase();
+      body.innerHTML = "";
+      [...data.history].reverse().filter(t => !q || `${t.id} ${t.time} ${t.method}`.toLowerCase().includes(q)).forEach(t => {
+        body.insertAdjacentHTML("beforeend", `<tr class="${selectedHistoryId === t.id ? "selected" : ""}"><td>${t.id}</td><td>${t.time}</td><td><span class="badge">${t.type}</span></td><td>${t.method}</td><td class="right">${money(t.total)}</td><td class="right"><button onclick="selectedHistoryId='${t.id}';showReceipt(data.history.find(x=>x.id==='${t.id}'))">Paragon</button> <button onclick="returnSale('${t.id}')">Zwrot</button></td></tr>`);
+      });
+    }
+
+    function renderStock() {
+      const body = document.getElementById("stockBody");
+      body.innerHTML = "";
+      data.products.forEach(p => {
+        body.insertAdjacentHTML("beforeend", `<tr><td>${p.code}</td><td>${p.name}</td><td class="right">${money(p.price)}</td><td class="right">${p.vat}%</td><td class="right">${p.stock}</td><td class="right"><button onclick="fillProduct('${p.code}')">Edytuj</button> <button onclick="toggleProduct('${p.code}')">${p.active ? "Ukryj" : "Pokaż"}</button></td></tr>`);
+      });
+    }
+
+    function fillProduct(code) {
+      const p = data.products.find(x => x.code === code);
+      document.getElementById("codeInput").value = p.code;
+      document.getElementById("nameInput").value = p.name;
+      document.getElementById("priceInput").value = p.price;
+      document.getElementById("vatInput").value = p.vat;
+      document.getElementById("stockInput").value = p.stock;
+    }
+
+    function renderSettings() {
+      document.getElementById("appTitle").textContent = data.settings.shopName;
+      document.title = data.settings.shopName;
+      document.getElementById("shopNameInput").value = data.settings.shopName;
+      document.getElementById("footerInput").value = data.settings.footer;
+      document.getElementById("lowStockInput").value = data.settings.lowStock;
+    }
+
+    function render() {
+      renderSettings();
+      renderProducts();
+      renderCart();
+      renderHistory();
+      renderStock();
+    }
+
+    document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll("nav button,.page").forEach(el => el.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.page).classList.add("active");
+    }));
+    document.getElementById("productSearch").addEventListener("input", renderProducts);
+    document.getElementById("historySearch").addEventListener("input", renderHistory);
+    document.getElementById("discountInput").addEventListener("input", renderCart);
+    document.getElementById("paidInput").addEventListener("input", renderCart);
+    document.getElementById("paymentMethod").addEventListener("change", renderCart);
+    document.getElementById("finishBtn").addEventListener("click", finishSale);
+    document.getElementById("saveProductBtn").addEventListener("click", saveProduct);
+    document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+      data.settings.shopName = document.getElementById("shopNameInput").value.trim() || "ultaa";
+      data.settings.footer = document.getElementById("footerInput").value.trim() || "Dziękujemy.";
+      data.settings.lowStock = number(document.getElementById("lowStockInput").value) || 5;
+      save();
+    });
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (confirm("Usunąć dane HTML i przywrócić domyślne?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        data = load();
+        cart = [];
+        render();
+      }
+    });
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ultaa_dane.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    document.getElementById("returnBtn").addEventListener("click", () => {
+      if (!selectedHistoryId) return alert("Najpierw wybierz paragon przyciskiem Paragon.");
+      returnSale(selectedHistoryId);
+    });
+
+    render();
+  </script>
+</body>
+</html>
